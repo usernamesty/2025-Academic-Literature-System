@@ -34,6 +34,7 @@ from business.utils.paper_vdb_init import local_vdb_init, easy_vector_query
 from business.api.summary import generate_summary, create_abstract_report, get_summary_status
 
 from business.api.paper_recommend import get_recommendation
+from business.api.translation import translate_by_llm
 
 urlpatterns = [
                   path("admin/", admin.site.urls),
@@ -129,6 +130,9 @@ urlpatterns = [
 
                   # 热门文献推荐
                   path("api/paperRecommend", get_recommendation),
-                  path("api/refresh", get_recommendation)
+                  path("api/refresh", get_recommendation),
+
+                  # 新增Agent接口
+                  path("api/translate/llmTranslation",translate_by_llm),                  
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
