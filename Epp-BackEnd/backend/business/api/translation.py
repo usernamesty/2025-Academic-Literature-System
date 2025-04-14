@@ -43,14 +43,19 @@ def translate_by_llm(request):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": source_text}
             ]
-    # try:
-    response = chat_func(messages=messages, max_tokens=max_tokens,temperature=1.3)
-    target_text = response.choices[0].message.content
-    return success(data={"target_text": target_text})
-    # except NoAPIKeyError:
-    #     return fail(msg=str("请检查系统环境变量是否有相应的api_key"))
-    # except Exception as e:
-    #     return fail(msg=str("调用llm发生错误,请检查后端报错信息"))
+    try:
+        response = chat_func(messages=messages, max_tokens=max_tokens,temperature=1.3)
+        if(isinstance(response,str)):
+            target_text = response
+        else:
+            target_text = response.choices[0].message.content
+        return success(data={"target_text": target_text})
+    except NoAPIKeyError:
+        return fail(msg=str("请检查系统环境变量是否有相应的api_key"))
+    except Exception as e:
+        print(response)
+        print(e)
+        return fail(msg=str("调用llm发生错误,请检查后端报错信息"))
 
 
 

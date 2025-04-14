@@ -11,7 +11,7 @@ import json
 from datetime import date
 
 
-def login(request):
+def login(request): 
     if request.method == 'POST':
         data = json.loads(request.body)
         username = data.get('username')
