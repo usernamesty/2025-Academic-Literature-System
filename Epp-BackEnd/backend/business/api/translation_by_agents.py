@@ -1,6 +1,6 @@
 from django.http import JsonResponse, HttpRequest
 import json
-from business.utils.agent import create_chat_func,NoAPIKeyError
+from business.utils.agent_chats import create_chat_func,NoAPIKeyError
 from business.utils.reply import fail, success
 from django.views.decorators.http import require_http_methods
 
@@ -49,7 +49,7 @@ def translate_by_llm(request):
             target_text = response
         else:
             target_text = response.choices[0].message.content
-        return success(data={"target_text": target_text})
+        return success(data={"target_text": target_text},msg="翻译成功")
     except NoAPIKeyError:
         return fail(msg=str("请检查系统环境变量是否有相应的api_key"))
     except Exception as e:
