@@ -76,7 +76,13 @@ def query_deepseek_v3_with_function(request):
                 messages.append({"role": "tool", "tool_call_id": tool.id, "content": result})
                 assistant_content_to_user = deepseek_v3_chat_func(messages=messages, max_tokens=4096).choices[0].message.content
                 messages.append({"role": "assistant", "content": assistant_content_to_user})
-                store_messages = [message for message in messages if isinstance(message,dict)]
+                store_messages = []
+                for message in messages:
+                    if isinstance(message,dict):
+                        store_messages.append(message)
+                    else:
+                        tool = message.tool_calls[0]
+                        store_messages.append({"role": "assistant", "tool_calls": [{"id":tool.id,"type":"function","function":{"name":tool.function.name,"arguments":tool.function.arguments}}]})
                 return success(data={"assistant_content_to_user": assistant_content_to_user,"historys": store_messages}, msg="询问成功")
             except Exception as e:
                 traceback.print_exc()
