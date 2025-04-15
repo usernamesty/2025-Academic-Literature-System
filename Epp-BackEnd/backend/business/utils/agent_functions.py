@@ -30,13 +30,13 @@ def read_file_and_count_info(params):
                 "word_count": word_count,
                 "char_count": char_count
             }
-            return json.dumps(result)
+            return json.dumps(result, ensure_ascii=False)
     except FileNotFoundError:
         error_result = {"error": f"错误: 文件 {file_path} 未找到。"}
-        return json.dumps(error_result)
+        return json.dumps(error_result, ensure_ascii=False)
     except Exception as e:
         error_result = {"error": f"发生未知错误: {e}"}
-        return json.dumps(error_result)
+        return json.dumps(error_result, ensure_ascii=False)
 
 
 # 新增的数学方法，求解一元二次方程 ax^2 + bx + c = 0
@@ -61,7 +61,7 @@ def solve_quadratic_equations(params):
             result = {"solution": f"方程有两个实数解: x1 = {sol1.real}, x2 = {sol2.real}"}
         else:
             result = {"solution": f"方程有两个复数解: x1 = {sol1}, x2 = {sol2}"}
-    return json.dumps(result)
+    return json.dumps(result, ensure_ascii=False)
 
 
 # 定义执行大模型写的 Python 代码的方法
@@ -80,7 +80,7 @@ def execute_python_code(params):
     finally:
         sys.stdout = old_stdout
 
-    return json.dumps(result)
+    return json.dumps(result, ensure_ascii=False)
 
 
 def save_content_to_file(params):
@@ -92,17 +92,17 @@ def save_content_to_file(params):
         target_path = os.path.join(os.getcwd(), 'business', 'utils', 'AI_OUTPUT')
     if not os.path.exists(target_path):
         error_result = {"error": f"错误: 目标路径 {target_path} 不存在。"}
-        return json.dumps(error_result)
+        return json.dumps(error_result, ensure_ascii=False)
     if file_format.lower() == 'md':
         try:
             file_path = os.path.join(target_path, f"{file_name}.md")
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             result = {"message": f"成功保存为 {file_path}"}
-            return json.dumps(result)
+            return json.dumps(result, ensure_ascii=False)
         except Exception as e:
             error_result = {"error": f"保存为 Markdown 文件时出错: {e}"}
-            return json.dumps(error_result)
+            return json.dumps(error_result, ensure_ascii=False)
     elif file_format.lower() == 'pdf':
         try:
             file_path = os.path.join(target_path, f"{file_name}.pdf")
@@ -112,13 +112,13 @@ def save_content_to_file(params):
             pdf.multi_cell(0, 10, txt=content)
             pdf.output(file_path)
             result = {"message": f"成功保存为 {file_path}"}
-            return json.dumps(result)
+            return json.dumps(result, ensure_ascii=False)
         except Exception as e:
             error_result = {"error": f"保存为 PDF 文件时出错: {e}"}
-            return json.dumps(error_result)
+            return json.dumps(error_result, ensure_ascii=False)
     else:
         error_result = {"error": f"不支持的文件格式: {file_format}"}
-        return json.dumps(error_result)
+        return json.dumps(error_result, ensure_ascii=False)
 
 
 # 为 read_file_and_count_info 方法创建详细描述

@@ -46,7 +46,6 @@ def query_llm(request):
 @require_http_methods(['POST'])
 def query_deepseek_v3_with_function(request):
     data = json.loads(request.body)
-
     tools = []
     function_names = data.get('function_names',[]) #要调用的方法名列表
     for function_name in function_names:
@@ -57,15 +56,22 @@ def query_deepseek_v3_with_function(request):
     # tools = [{"type":"function", "function": method.description} for method in method_dict.values()]
     query_content = data.get('query_content') #用户输入的查询语句
     deepseek_v3_chat_func = create_chat_func("deepseek-v3")
-    messages = [
-                {"role": "user", "content": query_content}
-            ]
+    historys = data.get('historys')
+    if historys:
+        historys = json.loads(historys)
+        historys.append({"role": "user", "content": query_content})
+        messages = historys
+    else:
+        messages = [
+                    {"role": "user", "content": query_content}
+                ]
+    print(messages)
     try:
         response = deepseek_v3_chat_func(messages=messages, max_tokens=4096,tools=tools)
         assistant_message = response.choices[0].message
         print(assistant_message.model_dump_json())
         # print(json.dumps(assistant_message, ensure_ascii=False, indent=4))
-        if assistant_message.tool_calls:
+        if assistant_message.tool_calls: # 有工具调用
             tool = assistant_message.tool_calls[0]
             messages.append(assistant_message)
             function_name = tool.function.name
@@ -74,21 +80,24 @@ def query_deepseek_v3_with_function(request):
                 function = method_dict[function_name].method
                 result = function(argumets)
                 messages.append({"role": "tool", "tool_call_id": tool.id, "content": result})
-                assistant_content_to_user = deepseek_v3_chat_func(messages=messages, max_tokens=4096).choices[0].message.content
+                assistant_content_to_user = deepseek_v3_chat_func(messages=messages, max_tokens=4096,tools=tools).choices[0].message.content
                 messages.append({"role": "assistant", "content": assistant_content_to_user})
-                store_messages = []
-                for message in messages:
-                    if isinstance(message,dict):
-                        store_messages.append(message)
-                    else:
-                        tool = message.tool_calls[0]
-                        store_messages.append({"role": "assistant", "tool_calls": [{"id":tool.id,"type":"function","function":{"name":tool.function.name,"arguments":tool.function.arguments}}]})
-                return success(data={"assistant_content_to_user": assistant_content_to_user,"historys": store_messages}, msg="询问成功")
             except Exception as e:
                 traceback.print_exc()
                 return fail(msg=str("方法调用失败"))
-        else:
-            pass
+        else: # 无工具调用
+            assistant_content_to_user = assistant_message.content
+            assert assistant_content_to_user, "assistant_content_to_user is None"
+            messages.append({"role": "assistant", "content": assistant_content_to_user})
+        store_messages = []
+        for message in messages:
+            if isinstance(message,dict):
+                store_messages.append(message)
+            else: #deepseek v3的function call调用格式无法json化，推测tools数据在它们的后端有后处理，这里只能自行处理
+                tool = message.tool_calls[0]
+                store_messages.append({"role": "assistant", "tool_calls": [{"id":tool.id,"type":"function","function":{"name":tool.function.name,"arguments":tool.function.arguments}}]})
+        print(store_messages)
+        return success(data={"assistant_content_to_user": assistant_content_to_user,"historys": json.dumps(store_messages, ensure_ascii=False, indent=4)}, msg="询问成功")
     except NoAPIKeyError:
         return fail(msg=str("请检查系统环境变量是否有相应的api_key"))
     except Exception as e:
