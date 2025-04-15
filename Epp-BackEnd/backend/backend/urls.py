@@ -35,7 +35,7 @@ from business.api.summary import generate_summary, create_abstract_report, get_s
 
 from business.api.paper_recommend import get_recommendation
 from business.api.translation_by_agents import translate_by_llm
-from business.api.query_agents import query_llm
+from business.api.query_agents import *
 
 urlpatterns = [
                   path("admin/", admin.site.urls),
@@ -135,6 +135,7 @@ urlpatterns = [
 
                   # 新增Agent接口
                   path("api/translate/llmTranslation",translate_by_llm),
-                  path("api/agent/onlyQueryLLM", query_llm)                  
+                  path("api/agent/onlyQueryLLM", query_llm),
+                  path("api/agent/query_deepseek_v3_with_function", query_deepseek_v3_with_function)                  
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

@@ -2,9 +2,11 @@ from django.http import JsonResponse, HttpRequest
 import json
 from business.utils.agent_chats import create_chat_func,NoAPIKeyError
 from business.utils.reply import fail, success
+from business.utils.agent_functions import method_dict
 from django.views.decorators.http import require_http_methods
 
 generual_system_prompt = "You are a helpful assistant."
+import traceback
 
 @require_http_methods(['POST'])
 def query_llm(request):
@@ -26,7 +28,7 @@ def query_llm(request):
                     {"role": "user", "content": query_content}
                 ]
     try:
-        response = chat_func(messages=messages, max_tokens=max_tokens,temperature=1.3)
+        response = chat_func(messages=messages, max_tokens=max_tokens)
         if(isinstance(response,str)):
             assistant_content = response
         else:
@@ -37,5 +39,55 @@ def query_llm(request):
         return fail(msg=str("请检查系统环境变量是否有相应的api_key"))
     except Exception as e:
         print(response)
-        print(e)
+        traceback.print_exc()
         return fail(msg=str("调用llm发生错误,请检查后端报错信息"))
+    
+
+@require_http_methods(['POST'])
+def query_deepseek_v3_with_function(request):
+    data = json.loads(request.body)
+
+    tools = []
+    function_names = data.get('function_names',[]) #要调用的方法名列表
+    for function_name in function_names:
+        if function_name in method_dict:
+            tools.append({"type":"function", "function": method_dict[function_name].description})
+        else:
+            return fail(msg=str("方法名不存在"))
+    # tools = [{"type":"function", "function": method.description} for method in method_dict.values()]
+    query_content = data.get('query_content') #用户输入的查询语句
+    deepseek_v3_chat_func = create_chat_func("deepseek-v3")
+    messages = [
+                {"role": "user", "content": query_content}
+            ]
+    try:
+        response = deepseek_v3_chat_func(messages=messages, max_tokens=4096,tools=tools)
+        assistant_message = response.choices[0].message
+        print(assistant_message.model_dump_json())
+        # print(json.dumps(assistant_message, ensure_ascii=False, indent=4))
+        if assistant_message.tool_calls:
+            tool = assistant_message.tool_calls[0]
+            messages.append(assistant_message)
+            function_name = tool.function.name
+            argumets = json.loads(tool.function.arguments)
+            try:
+                function = method_dict[function_name].method
+                result = function(argumets)
+                messages.append({"role": "tool", "tool_call_id": tool.id, "content": result})
+                assistant_content_to_user = deepseek_v3_chat_func(messages=messages, max_tokens=4096).choices[0].message.content
+                messages.append({"role": "assistant", "content": assistant_content_to_user})
+                store_messages = [message for message in messages if isinstance(message,dict)]
+                return success(data={"assistant_content_to_user": assistant_content_to_user,"historys": store_messages}, msg="询问成功")
+            except Exception as e:
+                traceback.print_exc()
+                return fail(msg=str("方法调用失败"))
+        else:
+            pass
+    except NoAPIKeyError:
+        return fail(msg=str("请检查系统环境变量是否有相应的api_key"))
+    except Exception as e:
+        traceback.print_exc()
+        return fail(msg=str("调用llm发生错误,请检查后端报错信息"))
+
+
+

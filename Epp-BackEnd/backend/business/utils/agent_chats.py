@@ -69,14 +69,23 @@ def deepseek_v3_chat():
         interval=5,
         on_backoff=backoff_hdlr
     )
-    def chat(messages,temperature=0.5,max_tokens=2048):
+    def chat(messages,temperature=0.5,max_tokens=2048,tools = None):
         client = OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com")
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        if tools is None:
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        else:
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=messages,  
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=tools
+            )
         return response
     return chat
 
