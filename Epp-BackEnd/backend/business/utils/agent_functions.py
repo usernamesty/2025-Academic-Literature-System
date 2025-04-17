@@ -108,7 +108,9 @@ def save_content_to_file(params):
             file_path = os.path.join(target_path, f"{file_name}.pdf")
             pdf = FPDF()
             pdf.add_page()
-            pdf.set_font("Arial", size=12)
+            # 这里需要更改为本地路径！
+            pdf.add_font("Microsoft YaHei", "", "D:\\ruangong\\2025-Academic-Literature-System\\Epp-BackEnd\\backend\\msyh.ttf", uni=True)
+            pdf.set_font("Microsoft YaHei", size=12)
             pdf.multi_cell(0, 10, txt=content)
             pdf.output(file_path)
             result = {"message": f"成功保存为 {file_path}"}

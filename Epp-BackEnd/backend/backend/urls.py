@@ -136,6 +136,7 @@ urlpatterns = [
                   # 新增Agent接口
                   path("api/translate/llmTranslation",translate_by_llm),
                   path("api/agent/onlyQueryLLM", query_llm),
-                  path("api/agent/query_deepseek_v3_with_function", query_deepseek_v3_with_function)                  
+                  path("api/agent/query_deepseek_v3_with_function", query_deepseek_v3_with_function),  
+                  path("api/agent/query_with_SE", query_with_SE)                
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

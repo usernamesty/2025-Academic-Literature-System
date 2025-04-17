@@ -1,4 +1,5 @@
 from django.http import JsonResponse, HttpRequest
+from baidusearch.baidusearch import search
 import json
 from business.utils.agent_chats import create_chat_func,NoAPIKeyError
 from business.utils.reply import fail, success
@@ -105,4 +106,48 @@ def query_deepseek_v3_with_function(request):
         return fail(msg=str("调用llm发生错误,请检查后端报错信息"))
 
 
+@require_http_methods(["POST"])
+def query_with_SE(request):
+    # 获取信息
+    data = json.loads(request.body)
+    query_content = data.get('query_content')
+    max_token = data.get('max_token')
+    llm = data.get('llm')
+    history = data.get('history')
 
+    # 异常处理
+    if not query_content:
+        return JsonResponse({'error': 'Missing query_content parameter'}, status=400)
+    # 搜索
+    results = search(query_content)
+    i=0
+    top_five_results=[]
+    for result in results:
+        i = i+1
+        top_five_results.append(result)
+        if i==5:
+            break
+    results=top_five_results
+
+    prompt = f"{query_content}，并结合以下信息回答问题{results}。答案中不需要列举这些信息"
+    if history:
+        history=json.loads(history)
+        history.append({"role":"user","content":prompt})
+        messages=history
+    else:
+        messages=[{"role":"user","content":prompt}]
+    chat_func = create_chat_func(llm) if llm else create_chat_func("deepseek-v3")
+    try:
+        response = chat_func(messages=messages, max_tokens=max_token)
+        if(isinstance(response,str)):
+            assistant_content = response
+        else:
+            assistant_content = response.choices[0].message.content
+        messages.append({"role": "assistant", "content": assistant_content})
+        return success(data={"assistant_content": assistant_content,"historys": json.dumps(messages, ensure_ascii=False, indent=4)}, msg="询问成功")
+    except NoAPIKeyError:
+        return fail(msg=str("请检查系统环境变量是否有相应的api_key"))
+    except Exception as e:
+        print(response)
+        traceback.print_exc()
+        return fail(msg=str("调用llm发生错误,请检查后端报错信息"))
