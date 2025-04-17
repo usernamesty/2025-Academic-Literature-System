@@ -29,7 +29,7 @@ from business.api.paper_details import like_paper, score_paper, collect_paper, r
 from business.api.upload_document import upload_paper, remove_uploaded_paper, document_list, get_document_url
 from business.api import user_info, manage
 from business.api.search import get_user_search_history, vector_query, dialog_query, flush, restore_search_record, \
-    build_kb, change_record_papers
+    build_kb, change_record_papers, get_top_search_keywords
 from business.utils.paper_vdb_init import local_vdb_init, easy_vector_query
 from business.api.summary import generate_summary, create_abstract_report, get_summary_status
 
@@ -132,6 +132,9 @@ urlpatterns = [
                   # 热门文献推荐
                   path("api/paperRecommend", get_recommendation),
                   path("api/refresh", get_recommendation),
+
+                  # 
+                  path("api/search/frequency", get_top_search_keywords),
 
                   # 新增Agent接口
                   path("api/translate/llmTranslation",translate_by_llm),

@@ -5,7 +5,9 @@ API格式如下：
 api/serach/...
 '''
 import re
-
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Count
 import Levenshtein
 
 
@@ -1122,4 +1124,22 @@ def flush(request):
             os.remove(conversation_path)
         sr.delete()
         HttpRequest('清空成功', status=200)
+        
+@require_http_methods(["GET"])       
+def get_top_search_keywords(request):
+    
+    top_keywords = (
+        SearchRecord.objects
+        # .filter(date__gte=start_date)  # 过滤时间范围
+        .values('keyword')             # 按关键字分组
+        .annotate(count=Count('keyword'))  # 计算每组数量
+        .order_by('-count')            # 按数量降序排序
+        [:10]                          # 取前10个结果
+    )
+    data = list(top_keywords)
+    return JsonResponse({'data': data}, safe=False)
+
+def top_keywords_view(request):
+    keywords = get_top_search_keywords()
+    return JsonResponse({'top_keywords': keywords})
         
